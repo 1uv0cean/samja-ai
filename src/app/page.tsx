@@ -20,6 +20,7 @@ export default function Home() {
   const [sajuData, setSajuData] = useState<SajuData | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [currentQuery, setCurrentQuery] = useState<string>('');
 
   // 클라이언트 사이드에서만 localStorage 접근
   useEffect(() => {
@@ -49,7 +50,8 @@ export default function Home() {
   const handleSubmit = async (query: string) => {
     setIsLoading(true);
     setVerdict(null);
-    setAgents([]); // 빈 상태로 시작
+    setAgents([]);
+    setCurrentQuery(query);
 
     try {
       const response = await fetch('/api/consult', {
@@ -83,15 +85,28 @@ export default function Home() {
                 // 에이전트 발언 시작 - pending 상태로 추가
                 setAgents(prev => [
                   ...prev,
-                  { agent: data.agent, content: '', status: 'pending' as const }
+                  { 
+                    agent: data.agent, 
+                    content: '', 
+                    status: 'pending' as const,
+                  }
                 ]);
               } else if (data.type === 'agent_response') {
-                // 에이전트 응답 완료
-                setAgents(prev => prev.map(a => 
-                  a.agent === data.agent 
-                    ? { ...a, content: data.content, status: 'completed' as const }
-                    : a
-                ));
+                // 마지막 pending 항목 업데이트
+                setAgents(prev => {
+                  const lastPendingIndex = prev.findLastIndex(
+                    a => a.agent === data.agent && a.status === 'pending'
+                  );
+                  if (lastPendingIndex === -1) return prev;
+                  
+                  const updated = [...prev];
+                  updated[lastPendingIndex] = {
+                    ...updated[lastPendingIndex],
+                    content: data.content,
+                    status: 'completed' as const,
+                  };
+                  return updated;
+                });
               } else if (data.type === 'verdict') {
                 setVerdict(data.verdict);
               } else if (data.type === 'done') {
@@ -177,6 +192,45 @@ export default function Home() {
           )}
         </motion.header>
 
+        {/* 사용자 질문 표시 */}
+        <AnimatePresence>
+          {currentQuery && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-6"
+            >
+              <div className="bg-[#3182F6] text-white rounded-2xl rounded-tr-sm p-4 shadow-sm">
+                <p className="text-sm font-medium opacity-70 mb-1">나의 질문</p>
+                <p className="text-base leading-relaxed">{currentQuery}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 토론 진행 표시 */}
+        <AnimatePresence>
+          {agents.length > 0 && !verdict && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex justify-center mb-6"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm text-sm text-[#6B7684]">
+                <motion.span
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                >
+                  💬
+                </motion.span>
+                <span>토론 진행 중... ({agents.length}번째 발언)</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* 에이전트 로그 영역 */}
         <AnimatePresence>
           {agents.length > 0 && (
@@ -188,7 +242,7 @@ export default function Home() {
             >
               {agents.map((agent, index) => (
                 <AgentLog
-                  key={agent.agent}
+                  key={`${agent.agent}-${index}`}
                   agent={agent}
                   isActive={agent.status === 'pending'}
                   order={index + 1}
@@ -198,14 +252,14 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* 최종 판결 */}
+        {/* 최종 합의 결과 */}
         <AnimatePresence>
-          {verdict && verdict.decision && (
+          {verdict && verdict.consensus && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex justify-center mb-8"
+              className="flex justify-center"
             >
               <VerdictStamp verdict={verdict} />
             </motion.div>
