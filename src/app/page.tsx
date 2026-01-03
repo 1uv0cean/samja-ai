@@ -21,6 +21,7 @@ export default function Home() {
   const [showModal, setShowModal] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
   // 클라이언트 사이드에서만 localStorage 접근
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function Home() {
     setVerdict(null);
     setAgents([]);
     setCurrentQuery(query);
+    setError(null); // 에러 상태 초기화
 
     try {
       const response = await fetch('/api/consult', {
@@ -109,6 +111,10 @@ export default function Home() {
                 });
               } else if (data.type === 'verdict') {
                 setVerdict(data.verdict);
+              } else if (data.type === 'error') {
+                // 서버에서 에러 발생
+                setError(data.message || 'AI 응답 중 오류가 발생했습니다.');
+                setIsLoading(false);
               } else if (data.type === 'done') {
                 setIsLoading(false);
               }
@@ -120,6 +126,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error:', error);
+      setError('서버와 연결할 수 없습니다. 네트워크를 확인해주세요.');
       setIsLoading(false);
     }
   };
@@ -262,6 +269,32 @@ export default function Home() {
               className="flex justify-center"
             >
               <VerdictStamp verdict={verdict} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 에러 메시지 */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6"
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <p className="text-red-800 font-medium mb-1">오류가 발생했습니다</p>
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="mt-3 text-sm text-red-600 hover:text-red-800 font-medium"
+              >
+                닫기
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

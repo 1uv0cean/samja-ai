@@ -1,7 +1,7 @@
 import { F_AGENT_CONFIG } from '@/lib/agents/f';
 import { SAJU_AGENT_CONFIG } from '@/lib/agents/saju';
 import { T_AGENT_CONFIG } from '@/lib/agents/t';
-import { generateResponse, model } from '@/lib/gemini';
+import { GeminiError, generateResponse, model } from '@/lib/gemini';
 import { formatSajuForAgent, type BirthInfo, type SajuData } from '@/lib/saju/engine';
 import type { FinalVerdict } from '@/types';
 import { NextRequest } from 'next/server';
@@ -162,6 +162,16 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  // AI 모델 사용 가능 여부 확인
+  if (!model) {
+    return new Response(JSON.stringify({ 
+      error: 'AI 서비스가 현재 사용 불가합니다. 관리자에게 문의해주세요.' 
+    }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   // 사주 컨텍스트
   let sajuContext: string | undefined;
   if (birthInfo && sajuData) {
@@ -246,7 +256,7 @@ export async function POST(request: NextRequest) {
         // 합의 체크 후 추가 토론
         while (!consensusReached && turnCount < MAX_TURNS) {
           // 합의 여부 체크
-          const consensusResult = await model.generateContent({
+          const consensusResult = await model!.generateContent({
             contents: [{ role: 'user', parts: [{ text: checkConsensusPrompt(query, debateHistory, turnCount) }] }],
             generationConfig: { maxOutputTokens: 50, temperature: 0.1 },
           });
@@ -311,7 +321,7 @@ ${debateHistory}
 
 JSON만 출력:`;
 
-        const verdictResult = await model.generateContent({
+        const verdictResult = await model!.generateContent({
           contents: [{ role: 'user', parts: [{ text: verdictPrompt }] }],
           generationConfig: { maxOutputTokens: 300, temperature: 0.3 },
         });
@@ -347,9 +357,25 @@ JSON만 출력:`;
         controller.close();
       } catch (error) {
         console.error('Stream error:', error);
+        
+        let errorMessage = '오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        let errorCode = 'UNKNOWN_ERROR';
+        
+        if (error instanceof GeminiError) {
+          errorMessage = error.message;
+          errorCode = error.code;
+        } else if (error instanceof Error) {
+          // 네트워크 오류 등
+          if (error.message.includes('fetch')) {
+            errorMessage = '네트워크 연결에 문제가 있습니다.';
+            errorCode = 'NETWORK_ERROR';
+          }
+        }
+        
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
           type: 'error',
-          message: '오류가 발생했습니다.',
+          message: errorMessage,
+          code: errorCode,
         })}\n\n`));
         controller.close();
       }
