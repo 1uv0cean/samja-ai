@@ -266,6 +266,7 @@ export default function Home() {
                   agent={agent}
                   isActive={agent.status === 'pending'}
                   order={index + 1}
+                  sajuData={agent.agent === 'SAJU' ? sajuData : null}
                 />
               ))}
             </motion.div>
