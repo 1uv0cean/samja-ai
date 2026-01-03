@@ -11,21 +11,24 @@ interface AgentLogProps {
 const AGENT_CONFIG = {
   LOGIC: {
     name: '논리',
-    color: 'from-blue-500 to-blue-700',
-    borderColor: 'border-blue-500',
+    color: '#3182F6',
+    bgColor: '#E8F3FF',
     icon: '🧠',
+    description: '분석적 사고',
   },
   INSTINCT: {
     name: '본능',
-    color: 'from-red-500 to-red-700',
-    borderColor: 'border-red-500',
+    color: '#FF6B6B',
+    bgColor: '#FFEBEE',
     icon: '🔥',
+    description: '직관적 판단',
   },
   REALITY: {
     name: '현실',
-    color: 'from-green-500 to-green-700',
-    borderColor: 'border-green-500',
+    color: '#00C851',
+    bgColor: '#E8FFF0',
     icon: '💼',
+    description: '현실적 조언',
   },
 } as const;
 
@@ -36,36 +39,60 @@ export function AgentLog({ agent, isActive }: AgentLogProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative overflow-hidden rounded-lg border-2 ${config.borderColor} bg-black/80 p-4`}
+      className="bg-white rounded-2xl p-5 shadow-sm"
     >
-      {/* 에반게리온 스타일 헤더 */}
-      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${config.color}`} />
-      
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-2xl">{config.icon}</span>
-        <h3 className={`font-bold text-lg bg-gradient-to-r ${config.color} bg-clip-text text-transparent`}>
-          {config.name}
-        </h3>
+      {/* 헤더 */}
+      <div className="flex items-center gap-3 mb-4">
+        <div 
+          className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+          style={{ backgroundColor: config.bgColor }}
+        >
+          {config.icon}
+        </div>
+        <div className="flex-1">
+          <h3 
+            className="font-semibold text-base"
+            style={{ color: config.color }}
+          >
+            {config.name}
+          </h3>
+          <p className="text-xs text-[#8B95A1]">{config.description}</p>
+        </div>
         {agent.status === 'pending' && (
           <motion.div
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="ml-auto text-xs text-gray-400"
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 1.2, repeat: Infinity }}
+            className="px-3 py-1 rounded-full text-xs font-medium"
+            style={{ backgroundColor: config.bgColor, color: config.color }}
           >
-            분석 중...
+            분석 중
           </motion.div>
         )}
       </div>
 
-      {/* 타이핑 효과가 적용될 컨텐츠 영역 */}
-      <div className="font-mono text-sm text-gray-200 min-h-[60px]">
+      {/* 컨텐츠 */}
+      <div className="text-[#191F28] text-sm leading-relaxed min-h-[48px]">
         {agent.content || (
-          <motion.span
-            animate={{ opacity: [0, 1] }}
-            transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
-          >
-            ▊
-          </motion.span>
+          <div className="flex items-center gap-1.5 text-[#8B95A1]">
+            <motion.span
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >
+              ●
+            </motion.span>
+            <motion.span
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+            >
+              ●
+            </motion.span>
+            <motion.span
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+            >
+              ●
+            </motion.span>
+          </div>
         )}
       </div>
     </motion.div>

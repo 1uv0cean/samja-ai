@@ -1,22 +1,17 @@
-import type { Metadata } from "next";
-import { Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export const metadata: Metadata = {
   title: "삼자대면 | SAMJA",
   description: "논리, 본능, 현실 - 세 에이전트의 심판을 받아보세요",
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
-  themeColor: '#000000',
+  themeColor: '#FFFFFF',
 };
 
 export default function RootLayout({
@@ -26,9 +21,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body
-        className={`${geistMono.variable} font-mono antialiased bg-black text-white`}
-      >
+      <head>
+        {/* Pretendard 폰트 */}
+        <link 
+          rel="stylesheet" 
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" 
+        />
+      </head>
+      <body className="antialiased">
         {children}
       </body>
     </html>

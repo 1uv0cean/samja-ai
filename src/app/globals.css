@@ -1,38 +1,185 @@
 @import "tailwindcss";
 
+/* ============================================
+   토스 스타일 디자인 시스템
+   ============================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 배경 */
+  --background: #FFFFFF;
+  --background-secondary: #F4F4F5;
+  --background-tertiary: #E5E5EA;
+  
+  /* 텍스트 */
+  --foreground: #191F28;
+  --foreground-secondary: #6B7684;
+  --foreground-tertiary: #8B95A1;
+  
+  /* 토스 블루 */
+  --toss-blue: #3182F6;
+  --toss-blue-light: #E8F3FF;
+  --toss-blue-dark: #1B64DA;
+  
+  /* 상태 컬러 */
+  --success: #00C851;
+  --success-light: #E8FFF0;
+  --error: #FF5252;
+  --error-light: #FFEBEE;
+  --warning: #FFB300;
+  --warning-light: #FFF8E1;
+  
+  /* 보더 & 디바이더 */
+  --border: #E5E8EB;
+  --border-light: #F2F4F6;
+  
+  /* 그림자 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Select 드롭다운 스타일 */
+/* 토스 스타일 카드 */
+.toss-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  padding: 24px;
+}
+
+/* 토스 스타일 버튼 */
+.toss-button {
+  background: var(--toss-blue);
+  color: white;
+  border-radius: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.toss-button:hover {
+  background: var(--toss-blue-dark);
+  transform: translateY(-1px);
+}
+
+.toss-button:active {
+  transform: translateY(0);
+}
+
+.toss-button:disabled {
+  background: var(--border);
+  color: var(--foreground-tertiary);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 토스 스타일 인풋 */
+.toss-input {
+  width: 100%;
+  padding: 16px;
+  background: var(--background-secondary);
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  font-size: 16px;
+  color: var(--foreground);
+  transition: all 0.2s ease;
+}
+
+.toss-input:focus {
+  outline: none;
+  border-color: var(--toss-blue);
+  background: white;
+}
+
+.toss-input::placeholder {
+  color: var(--foreground-tertiary);
+}
+
+/* 토스 스타일 셀렉트 */
 select {
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
   appearance: none !important;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
-  background-position: right 0.5rem center !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7684' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+  background-position: right 12px center !important;
   background-repeat: no-repeat !important;
-  background-size: 1.5em 1.5em !important;
+  background-size: 1.25em 1.25em !important;
   padding-right: 2.5rem !important;
+}
+
+/* 토스 스타일 토글 버튼 그룹 */
+.toss-toggle-group {
+  display: grid;
+  gap: 8px;
+}
+
+.toss-toggle-button {
+  padding: 14px 16px;
+  background: var(--background-secondary);
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  font-weight: 500;
+  color: var(--foreground-secondary);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.toss-toggle-button:hover {
+  background: var(--background-tertiary);
+}
+
+.toss-toggle-button.active {
+  background: var(--toss-blue-light);
+  border-color: var(--toss-blue);
+  color: var(--toss-blue);
+}
+
+/* 토스 스타일 뱃지 */
+.toss-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--background-secondary);
+  border-radius: 100px;
+  font-size: 14px;
+  color: var(--foreground-secondary);
+}
+
+/* 스크롤바 스타일 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground-tertiary);
+}
+
+/* 안전 영역 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

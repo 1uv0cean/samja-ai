@@ -21,49 +21,40 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
 
   return (
     <form onSubmit={handleSubmit} className="relative">
-      <div className="relative overflow-hidden rounded-lg border-2 border-orange-500 bg-black/80">
-        {/* 에반게리온 스타일 상단 바 */}
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500" />
+      <div className="flex items-center gap-3 bg-[#F4F4F5] rounded-2xl p-2 pl-5">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="고민을 입력하세요..."
+          disabled={isLoading}
+          className="flex-1 bg-transparent text-[#191F28] placeholder-[#8B95A1] outline-none text-base py-2"
+        />
         
-        <div className="flex items-center gap-2 p-4">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="고민을 입력하세요..."
-            disabled={isLoading}
-            className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none font-mono"
-          />
-          
-          <motion.button
-            type="submit"
-            disabled={!query.trim() || isLoading}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded
-                       disabled:opacity-50 disabled:cursor-not-allowed
-                       shadow-lg shadow-orange-500/50"
-          >
-            {isLoading ? (
-              <motion.span
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1, repeat: Infinity }}
-              >
-                분석 중...
-              </motion.span>
-            ) : (
-              '심판 요청'
-            )}
-          </motion.button>
-        </div>
+        <motion.button
+          type="submit"
+          disabled={!query.trim() || isLoading}
+          whileTap={{ scale: 0.95 }}
+          className="px-5 py-3 bg-[#3182F6] text-white font-semibold rounded-xl
+                     disabled:bg-[#E5E8EB] disabled:text-[#8B95A1] disabled:cursor-not-allowed
+                     hover:bg-[#1B64DA] transition-colors"
+        >
+          {isLoading ? (
+            <motion.span
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1, repeat: Infinity }}
+              className="flex items-center gap-2"
+            >
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="31.4 31.4" />
+              </svg>
+              분석 중
+            </motion.span>
+          ) : (
+            '심판 요청'
+          )}
+        </motion.button>
       </div>
-      
-      {/* 스캔라인 효과 */}
-      <motion.div
-        animate={{ y: ['-100%', '100%'] }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-        className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-500/5 to-transparent pointer-events-none"
-      />
     </form>
   );
 }

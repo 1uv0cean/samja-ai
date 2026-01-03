@@ -10,24 +10,24 @@ interface VerdictStampProps {
 const VERDICT_CONFIG = {
   GRANTED: {
     text: '승인',
-    color: 'text-green-500',
-    borderColor: 'border-green-500',
-    shadowColor: 'shadow-green-500/50',
-    bgColor: 'bg-green-500/10',
+    emoji: '✅',
+    color: '#00C851',
+    bgColor: '#E8FFF0',
+    description: '해도 좋습니다',
   },
   DENIED: {
     text: '기각',
-    color: 'text-red-500',
-    borderColor: 'border-red-500',
-    shadowColor: 'shadow-red-500/50',
-    bgColor: 'bg-red-500/10',
+    emoji: '❌',
+    color: '#FF5252',
+    bgColor: '#FFEBEE',
+    description: '하지 마세요',
   },
   HOLD: {
     text: '보류',
-    color: 'text-yellow-500',
-    borderColor: 'border-yellow-500',
-    shadowColor: 'shadow-yellow-500/50',
-    bgColor: 'bg-yellow-500/10',
+    emoji: '⏸️',
+    color: '#FFB300',
+    bgColor: '#FFF8E1',
+    description: '조금 더 고민해보세요',
   },
 } as const;
 
@@ -36,49 +36,56 @@ export function VerdictStamp({ verdict }: VerdictStampProps) {
 
   return (
     <motion.div
-      initial={{ scale: 0, rotate: -180 }}
-      animate={{ scale: 1, rotate: 0 }}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{
         type: 'spring',
         stiffness: 200,
-        damping: 15,
-        delay: 0.5,
+        damping: 20,
+        delay: 0.3,
       }}
-      className="flex flex-col items-center gap-4"
+      className="w-full max-w-md bg-white rounded-3xl p-8 shadow-lg text-center"
     >
-      {/* 도장 */}
+      {/* 결과 아이콘 & 텍스트 */}
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 15, delay: 0.5 }}
+        className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-4xl"
+        style={{ backgroundColor: config.bgColor }}
+      >
+        {config.emoji}
+      </motion.div>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className={`relative w-32 h-32 rounded-full border-4 ${config.borderColor} ${config.bgColor}
-                    flex items-center justify-center shadow-2xl ${config.shadowColor}`}
+        transition={{ delay: 0.7 }}
       >
-        {/* 인장 효과 */}
-        <div className="absolute inset-2 rounded-full border-2 border-current opacity-30" />
-        <span className={`text-4xl font-black ${config.color}`}>
+        <h2 
+          className="text-3xl font-bold mb-1"
+          style={{ color: config.color }}
+        >
           {config.text}
-        </span>
-        
-        {/* 도장 찍는 효과 */}
-        <motion.div
-          initial={{ opacity: 0.8 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="absolute inset-0 bg-white rounded-full"
-        />
+        </h2>
+        <p className="text-[#8B95A1] text-sm mb-6">{config.description}</p>
       </motion.div>
 
       {/* 이유 */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1 }}
-        className="text-center max-w-md"
+        transition={{ delay: 0.9 }}
+        className="bg-[#F4F4F5] rounded-2xl p-5"
       >
-        <p className="text-gray-300 font-mono text-sm mb-2">{verdict.reason}</p>
+        <p className="text-[#191F28] text-sm leading-relaxed">
+          {verdict.reason}
+        </p>
         {verdict.winner && (
-          <p className={`${config.color} font-bold`}>
+          <p 
+            className="mt-3 text-sm font-medium"
+            style={{ color: config.color }}
+          >
             결정권자: {verdict.winner}
           </p>
         )}

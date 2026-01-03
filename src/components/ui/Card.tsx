@@ -4,22 +4,22 @@ import { cn } from '@/lib/utils';
 import { HTMLAttributes, forwardRef } from 'react';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'bordered' | 'glow';
+  variant?: 'default' | 'outlined' | 'elevated';
 }
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', children, ...props }, ref) => {
     const variants = {
-      default: 'bg-black/60 backdrop-blur-sm',
-      bordered: 'bg-black/60 backdrop-blur-sm border border-gray-800',
-      glow: 'bg-black/80 backdrop-blur-sm border border-orange-500/50 shadow-lg shadow-orange-500/20',
+      default: 'bg-white shadow-sm',
+      outlined: 'bg-white border border-[#E5E8EB]',
+      elevated: 'bg-white shadow-lg',
     };
 
     return (
       <div
         ref={ref}
         className={cn(
-          'rounded-lg p-4',
+          'rounded-2xl p-5',
           variants[variant],
           className
         )}
