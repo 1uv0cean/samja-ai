@@ -276,8 +276,8 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // 다음 발언자 선택 (순환)
-          const nextAgent = AGENTS[turnCount % 3];
+          // 다음 발언자 선택 (초기 랜덤 순서 유지하면서 순환)
+          const nextAgent = initialOrder[turnCount % 3];
 
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'agent_start',
