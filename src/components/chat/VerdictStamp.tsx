@@ -33,8 +33,8 @@ export function VerdictStamp({ verdict }: VerdictStampProps) {
         transition={{ type: 'spring', stiffness: 300, damping: 15, delay: 0.5 }}
         className="flex items-center justify-center gap-2 mb-5"
       >
-        <span className="text-2xl">🤝</span>
-        <h2 className="text-xl font-bold text-[#191F28]">합의 도달</h2>
+        <span className="text-2xl">✨</span>
+        <h2 className="text-xl font-bold text-[#191F28]">세 관점의 결론</h2>
       </motion.div>
 
       {/* 핵심 합의 내용 */}
@@ -44,7 +44,7 @@ export function VerdictStamp({ verdict }: VerdictStampProps) {
         transition={{ delay: 0.6 }}
         className="bg-gradient-to-r from-[#3182F6] to-[#6366F1] text-white rounded-2xl p-4 mb-5"
       >
-        <p className="text-sm font-medium opacity-80 mb-1">💡 핵심 합의</p>
+        <p className="text-sm font-medium opacity-80 mb-1">💬 한마디로</p>
         <p className="text-base leading-relaxed font-medium">
           {verdict.consensus}
         </p>
@@ -93,7 +93,7 @@ export function VerdictStamp({ verdict }: VerdictStampProps) {
           transition={{ delay: 0.9 }}
           className="bg-[#F4F4F5] rounded-2xl p-4"
         >
-          <p className="text-xs font-medium text-[#6B7684] mb-2">📋 행동 가이드</p>
+          <p className="text-xs font-medium text-[#6B7684] mb-2">🎯 이렇게 해보세요</p>
           <p className="text-sm text-[#191F28] leading-relaxed">
             {verdict.recommendation}
           </p>

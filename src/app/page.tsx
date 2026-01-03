@@ -202,7 +202,7 @@ export default function Home() {
               className="mb-6"
             >
               <div className="bg-[#3182F6] text-white rounded-2xl rounded-tr-sm p-4 shadow-sm">
-                <p className="text-sm font-medium opacity-70 mb-1">나의 질문</p>
+                <p className="text-sm font-medium opacity-70 mb-1">내 고민</p>
                 <p className="text-base leading-relaxed">{currentQuery}</p>
               </div>
             </motion.div>
@@ -225,7 +225,7 @@ export default function Home() {
                 >
                   💬
                 </motion.span>
-                <span>토론 진행 중... ({agents.length}번째 발언)</span>
+                <span>의견 나누는 중... ({agents.length}번째)</span>
               </div>
             </motion.div>
           )}

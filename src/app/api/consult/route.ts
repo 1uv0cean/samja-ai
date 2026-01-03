@@ -132,11 +132,18 @@ const FINAL_VERDICT_PROMPT = `# Role
 2. 각자 다른 관점에서 제시한 조언 중 조화시킬 수 있는 것은?
 3. 결론적으로 사용자가 어떻게 하면 좋을지 구체적인 행동 가이드
 
-# Output (JSON만)
+# Output (JSON)
+주의: keyPoints 배열은 반드시 [T형 조언, F형 조언, 사주 조언] 순서로!
+각 조언에 "T형:", "F형:", "사주:" 같은 이름 prefix 붙이지 마!
+
 {
-  "consensus": "세 상담사가 합의한 핵심 조언 1-2문장",
-  "keyPoints": ["T형의 핵심 조언", "F형의 핵심 조언", "사주의 핵심 조언"],
-  "recommendation": "종합적인 행동 가이드 2-3문장"
+  "consensus": "세 상담사가 합의한 핵심 결론 1-2문장",
+  "keyPoints": [
+    "논리적 관점에서 본 핵심 조언 (이름 없이)",
+    "감정적 관점에서 본 핵심 조언 (이름 없이)", 
+    "운세적 관점에서 본 핵심 조언 (이름 없이)"
+  ],
+  "recommendation": "구체적인 행동 가이드 2-3문장"
 }`;
 
 export async function POST(request: NextRequest) {

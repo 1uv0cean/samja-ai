@@ -10,7 +10,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "삼자대면 | SAMJA",
-  description: "논리, 본능, 현실 - 세 에이전트의 심판을 받아보세요",
+  description: "T형, F형, 사주 - 세 가지 시선으로 보는 내 고민",
   themeColor: '#FFFFFF',
 };
 

@@ -12,21 +12,21 @@ interface AgentLogProps {
 const AGENT_CONFIG = {
   T: {
     name: 'T형',
-    subtitle: '논리적 분석',
+    subtitle: '논리로 따져보는',
     color: '#3182F6',
     bgColor: '#E8F3FF',
     icon: '🧠',
   },
   F: {
     name: 'F형',
-    subtitle: '감정적 공감',
+    subtitle: '마음으로 느끼는',
     color: '#FF6B9D',
     bgColor: '#FFE8F0',
     icon: '💗',
   },
   SAJU: {
     name: '사주',
-    subtitle: '운세 기반',
+    subtitle: '운으로 읽어보는',
     color: '#9B59B6',
     bgColor: '#F3E8FF',
     icon: '🔮',
@@ -75,7 +75,7 @@ export function AgentLog({ agent, isActive, order }: AgentLogProps) {
             className="px-3 py-1 rounded-full text-xs font-medium"
             style={{ backgroundColor: config.bgColor, color: config.color }}
           >
-            분석 중
+            생각 중...
           </motion.div>
         )}
       </div>

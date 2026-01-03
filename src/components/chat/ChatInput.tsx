@@ -26,7 +26,7 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="고민을 입력하세요..."
+          placeholder="고민을 말해주세요..."
           disabled={isLoading}
           className="flex-1 bg-transparent text-[#191F28] placeholder-[#8B95A1] outline-none text-base py-2"
         />
@@ -48,10 +48,10 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
               <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="31.4 31.4" />
               </svg>
-              분석 중
+              토론 중
             </motion.span>
           ) : (
-            '심판 요청'
+            '조언 받기'
           )}
         </motion.button>
       </div>

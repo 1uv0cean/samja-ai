@@ -192,6 +192,12 @@ export function BirthInfoModal({ onSubmit }: BirthInfoModalProps) {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && canProceed()) {
+                        e.preventDefault();
+                        goNext();
+                      }
+                    }}
                     placeholder="이름을 입력하세요"
                     autoFocus
                     className="text-2xl md:text-3xl font-medium text-[#191F28] placeholder-[#D1D5DB] border-b-2 border-[#E5E8EB] focus:border-[#3182F6] outline-none py-3 transition-colors bg-transparent"
@@ -374,6 +380,12 @@ export function BirthInfoModal({ onSubmit }: BirthInfoModalProps) {
                           type="text"
                           value={timeInput}
                           onChange={(e) => setTimeInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSubmit();
+                            }
+                          }}
                           placeholder="12:00"
                           className="flex-1 p-4 bg-[#F4F4F5] rounded-2xl text-[#191F28] text-lg font-medium text-center border-2 border-transparent focus:border-[#3182F6] focus:bg-white outline-none transition-all"
                         />
