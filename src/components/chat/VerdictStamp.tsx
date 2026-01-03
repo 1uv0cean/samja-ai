@@ -37,18 +37,33 @@ export function VerdictStamp({ verdict }: VerdictStampProps) {
         <h2 className="text-xl font-bold text-[#191F28]">세 관점의 결론</h2>
       </motion.div>
 
-      {/* 핵심 합의 내용 */}
+      {/* 공통점 */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
-        className="bg-gradient-to-r from-[#3182F6] to-[#6366F1] text-white rounded-2xl p-4 mb-5"
+        className="bg-gradient-to-r from-[#3182F6] to-[#6366F1] text-white rounded-2xl p-4 mb-3"
       >
-        <p className="text-sm font-medium opacity-80 mb-1">💬 한마디로</p>
+        <p className="text-sm font-medium opacity-80 mb-1">📌 공통점</p>
         <p className="text-base leading-relaxed font-medium">
           {verdict.consensus}
         </p>
       </motion.div>
+
+      {/* 이견 (있을 경우) */}
+      {verdict.disagreement && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.65 }}
+          className="bg-gradient-to-r from-[#F59E0B] to-[#EF4444] text-white rounded-2xl p-4 mb-5"
+        >
+          <p className="text-sm font-medium opacity-80 mb-1">⚡ 핵심 이견</p>
+          <p className="text-base leading-relaxed font-medium">
+            {verdict.disagreement}
+          </p>
+        </motion.div>
+      )}
 
       {/* 각 상담사 핵심 조언 */}
       {verdict.keyPoints && verdict.keyPoints.length > 0 && (
