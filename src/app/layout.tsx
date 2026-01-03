@@ -6,12 +6,12 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#FFFFFF',
 };
 
 export const metadata: Metadata = {
   title: "삼자대면 | SAMJA",
   description: "T형, F형, 사주 - 세 가지 시선으로 보는 내 고민",
-  themeColor: '#FFFFFF',
 };
 
 export default function RootLayout({

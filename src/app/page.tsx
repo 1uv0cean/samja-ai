@@ -66,6 +66,19 @@ export default function Home() {
         }),
       });
 
+      // JSON 에러 응답 처리 (invalid_query 등)
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error === 'invalid_query') {
+          setError(`${errorData.message}\n\n💡 ${errorData.suggestion}`);
+        } else {
+          setError(errorData.error || '오류가 발생했습니다.');
+        }
+        setCurrentQuery(''); // 질문 초기화
+        setIsLoading(false);
+        return;
+      }
+
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -280,18 +293,30 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6"
+              className={`rounded-2xl p-5 mb-6 ${
+                error.includes('💡') 
+                  ? 'bg-amber-50 border border-amber-200' 
+                  : 'bg-red-50 border border-red-200'
+              }`}
             >
               <div className="flex items-start gap-3">
-                <span className="text-xl">⚠️</span>
-                <div>
-                  <p className="text-red-800 font-medium mb-1">오류가 발생했습니다</p>
-                  <p className="text-red-600 text-sm">{error}</p>
+                <span className="text-xl">{error.includes('💡') ? '💬' : '⚠️'}</span>
+                <div className="flex-1">
+                  <p className={`font-medium mb-2 ${error.includes('💡') ? 'text-amber-800' : 'text-red-800'}`}>
+                    {error.includes('💡') ? '질문을 다시 입력해주세요' : '오류가 발생했습니다'}
+                  </p>
+                  <p className={`text-sm whitespace-pre-wrap ${error.includes('💡') ? 'text-amber-700' : 'text-red-600'}`}>
+                    {error}
+                  </p>
                 </div>
               </div>
               <button
                 onClick={() => setError(null)}
-                className="mt-3 text-sm text-red-600 hover:text-red-800 font-medium"
+                className={`mt-3 text-sm font-medium ${
+                  error.includes('💡') 
+                    ? 'text-amber-600 hover:text-amber-800' 
+                    : 'text-red-600 hover:text-red-800'
+                }`}
               >
                 닫기
               </button>

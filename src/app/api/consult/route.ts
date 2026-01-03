@@ -23,9 +23,22 @@ const AGENTS = [
   { id: 'SAJU' as const, name: '사주', config: SAJU_AGENT_CONFIG },
 ];
 
+// 현재 날짜 정보 생성
+function getCurrentDateContext(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  return `# 현재 날짜 정보
+오늘: ${year}년 ${month}월 ${now.getDate()}일
+상반기/하반기: ${month <= 6 ? '상반기' : '하반기'}
+시점 참고: "올해"는 ${year}년, "내년"은 ${year + 1}년, "작년"은 ${year - 1}년을 의미해.`;
+}
+
 // 첫 발언 프롬프트
 function getFirstTurnPrompt(basePrompt: string): string {
   return `${basePrompt}
+
+${getCurrentDateContext()}
 
 # 토론 시작
 너는 이 질문에 대해 첫 번째로 의견을 말하게 됐어.
@@ -35,7 +48,7 @@ function getFirstTurnPrompt(basePrompt: string): string {
 2. 네 전문 영역의 근거를 반드시 1개 이상 제시
    - T형: 숫자/확률/논리
    - F형: 감정/마음/행복
-   - 사주: 타이밍/운/시기
+   - 사주: 타이밍/운/시기 (구체적인 연도/월 언급)
 3. 2-3문장으로 답변해`;
 }
 
@@ -60,24 +73,32 @@ ${myPreviousStatements.map((s, i) => `${i + 1}. "${s.slice(0, 60)}..."`).join('\
   if (turnCount >= 5) {
     return `${basePrompt}
 
+${getCurrentDateContext()}
+
 # 토론 마무리 단계
 지금까지의 대화:
 ${debateHistory}
 ${previousStatementsWarning}
 
-# 결론을 향해!
-${lastSpeaker}의 말을 듣고, 이제 합의점을 찾아야 해.
+# 이제 결론을 내릴 시간!
+${lastSpeaker}의 말을 듣고, 실용적인 합의안을 제시해.
+
+⚠️ 주의: 억지로 동의하지 마!
+- 네 관점을 버리지 않으면서 타협점을 찾아
+- "모두 옳다"는 식의 애매한 결론 금지
 
 필수 요구사항:
-1. 다른 상담사들 의견 중 동의하는 부분 인정
-2. 네 관점에서 타협 가능한 결론 제시
-3. 구체적인 행동 제안 (예: "6개월 준비 후", "일단 부업으로 테스트")
+1. 다른 상담사 의견 중 인정할 부분 명확히 언급
+2. 하지만 네 관점에서 꼭 지켜야 할 것 강조
+3. 구체적인 행동 가이드 제시 (시기 + 조건 + 마음가짐)
 
-2-3문장으로, 명확한 결론과 함께!`;
+2-3문장으로!`;
   }
 
   // 전반부 토론
   return `${basePrompt}
+
+${getCurrentDateContext()}
 
 # 토론 진행 중
 지금까지의 대화:
@@ -86,13 +107,18 @@ ${previousStatementsWarning}
 
 # ${lastSpeaker}에게 반응해!
 
+⚠️ 중요: 먼저 ${lastSpeaker}의 핵심 주장을 정확히 파악해!
+- ${lastSpeaker}가 "하라"고 했는지, "하지 말라"고 했는지?
+- ${lastSpeaker}의 결론이 뭐였는지?
+→ 상대 의견을 오해하거나 왜곡하지 말고 정확히 이해한 뒤 반응해!
+
 필수 요구사항:
-1. ${lastSpeaker}의 말에 동의 또는 반대 표명 (애매하게 X)
+1. ${lastSpeaker}의 핵심 주장을 한 문장으로 요약한 뒤, 거기에 동의/반대 표명
 2. 네 전문 영역의 근거로 주장 강화
    - T형: 숫자/확률/논리
    - F형: 감정/마음/행복  
-   - 사주: 타이밍/운/시기
-3. 새로운 관점이나 질문 던지기
+   - 사주: 타이밍/운/시기 (구체적인 연도/월 언급)
+3. 상대 의견에 대한 보완점이나 새로운 관점 제시
 
 2-3문장으로, 네 주장을 명확히!`;
 }
@@ -176,6 +202,61 @@ export async function POST(request: NextRequest) {
   let sajuContext: string | undefined;
   if (birthInfo && sajuData) {
     sajuContext = formatSajuForAgent(birthInfo, sajuData);
+  }
+
+  // 질문 적합성 검증
+  const validationPrompt = `너는 상담 질문 검증 AI야. 
+사용자의 질문이 "삼자대면" 상담(T형/F형/사주 관점에서 토론)에 적합한지 판단해.
+
+적합한 질문 예시:
+- 고민 상담: "이직해도 될까요?", "연애를 시작해도 될까?"
+- 선택/결정: "A와 B 중 뭘 선택해야 할까?", "창업 vs 취업"
+- 인생 조언: "요즘 무기력해요", "새로운 도전을 해볼까?"
+
+부적절한 질문:
+- 단순 정보 요청: "오늘 날씨 어때?", "파이썬 문법 알려줘"
+- 의미없는 문장: "ㅋㅋㅋ", "테스트", "안녕"
+- 불법/유해 내용
+- 너무 짧거나 구체적이지 않은 질문: "ㅇㅇ", "어떻게 해"
+
+사용자 질문: "${query}"
+
+JSON으로만 응답:
+{
+  "isValid": true 또는 false,
+  "reason": "부적절한 경우에만 이유 설명",
+  "suggestion": "부적절한 경우 예시 질문 제안"
+}`;
+
+  try {
+    const validationResult = await model!.generateContent({
+      contents: [{ role: 'user', parts: [{ text: validationPrompt }] }],
+      generationConfig: { maxOutputTokens: 150, temperature: 0.1 },
+    });
+
+    const validationText = validationResult.response.text();
+    const validationMatch = validationText.match(/\{[\s\S]*\}/);
+    
+    if (validationMatch) {
+      try {
+        const validation = JSON.parse(validationMatch[0]);
+        if (!validation.isValid) {
+          return new Response(JSON.stringify({ 
+            error: 'invalid_query',
+            message: validation.reason || '상담에 적합한 질문을 입력해주세요.',
+            suggestion: validation.suggestion || '예: "이직을 해도 될까요?", "새로운 시작을 해볼까요?"',
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+      } catch {
+        // 파싱 실패시 일단 통과
+      }
+    }
+  } catch (error) {
+    console.error('Validation error:', error);
+    // 검증 실패시 일단 통과 (사용자 경험 우선)
   }
 
   // 최대 발언 횟수 (첫 3턴 + 추가 3턴 = 6턴이면 충분)
