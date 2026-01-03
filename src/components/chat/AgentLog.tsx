@@ -6,33 +6,34 @@ import { motion } from 'framer-motion';
 interface AgentLogProps {
   agent: AgentResponse;
   isActive: boolean;
+  order?: number; // 발언 순서
 }
 
 const AGENT_CONFIG = {
-  LOGIC: {
-    name: '논리',
+  T: {
+    name: 'T형',
+    subtitle: '논리적 분석',
     color: '#3182F6',
     bgColor: '#E8F3FF',
     icon: '🧠',
-    description: '분석적 사고',
   },
-  INSTINCT: {
-    name: '본능',
-    color: '#FF6B6B',
-    bgColor: '#FFEBEE',
-    icon: '🔥',
-    description: '직관적 판단',
+  F: {
+    name: 'F형',
+    subtitle: '감정적 공감',
+    color: '#FF6B9D',
+    bgColor: '#FFE8F0',
+    icon: '💗',
   },
-  REALITY: {
-    name: '현실',
-    color: '#00C851',
-    bgColor: '#E8FFF0',
-    icon: '💼',
-    description: '현실적 조언',
+  SAJU: {
+    name: '사주',
+    subtitle: '운세 기반',
+    color: '#9B59B6',
+    bgColor: '#F3E8FF',
+    icon: '🔮',
   },
 } as const;
 
-export function AgentLog({ agent, isActive }: AgentLogProps) {
+export function AgentLog({ agent, isActive, order }: AgentLogProps) {
   const config = AGENT_CONFIG[agent.agent];
 
   return (
@@ -44,10 +45,19 @@ export function AgentLog({ agent, isActive }: AgentLogProps) {
       {/* 헤더 */}
       <div className="flex items-center gap-3 mb-4">
         <div 
-          className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-xl relative"
           style={{ backgroundColor: config.bgColor }}
         >
           {config.icon}
+          {/* 발언 순서 뱃지 */}
+          {order !== undefined && agent.content && (
+            <div 
+              className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+              style={{ backgroundColor: config.color }}
+            >
+              {order}
+            </div>
+          )}
         </div>
         <div className="flex-1">
           <h3 
@@ -56,7 +66,7 @@ export function AgentLog({ agent, isActive }: AgentLogProps) {
           >
             {config.name}
           </h3>
-          <p className="text-xs text-[#8B95A1]">{config.description}</p>
+          <p className="text-xs text-[#8B95A1]">{config.subtitle}</p>
         </div>
         {agent.status === 'pending' && (
           <motion.div

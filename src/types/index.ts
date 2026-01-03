@@ -1,7 +1,7 @@
 import type { BirthInfo, SajuData } from '@/lib/saju/engine';
 
 export interface AgentResponse {
-  agent: 'LOGIC' | 'INSTINCT' | 'REALITY';
+  agent: 'T' | 'F' | 'SAJU';
   content: string;
   status: 'pending' | 'completed';
 }

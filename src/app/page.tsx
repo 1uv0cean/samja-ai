@@ -49,13 +49,7 @@ export default function Home() {
   const handleSubmit = async (query: string) => {
     setIsLoading(true);
     setVerdict(null);
-    
-    // 초기 상태 설정
-    setAgents([
-      { agent: 'LOGIC', content: '', status: 'pending' },
-      { agent: 'INSTINCT', content: '', status: 'pending' },
-      { agent: 'REALITY', content: '', status: 'pending' },
-    ]);
+    setAgents([]); // 빈 상태로 시작
 
     try {
       const response = await fetch('/api/consult', {
@@ -68,12 +62,49 @@ export default function Home() {
         }),
       });
 
-      const data = await response.json();
-      setAgents(data.agents);
-      setVerdict(data.verdict);
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) throw new Error('No reader');
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value);
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.type === 'agent_start') {
+                // 에이전트 발언 시작 - pending 상태로 추가
+                setAgents(prev => [
+                  ...prev,
+                  { agent: data.agent, content: '', status: 'pending' as const }
+                ]);
+              } else if (data.type === 'agent_response') {
+                // 에이전트 응답 완료
+                setAgents(prev => prev.map(a => 
+                  a.agent === data.agent 
+                    ? { ...a, content: data.content, status: 'completed' as const }
+                    : a
+                ));
+              } else if (data.type === 'verdict') {
+                setVerdict(data.verdict);
+              } else if (data.type === 'done') {
+                setIsLoading(false);
+              }
+            } catch {
+              // JSON 파싱 에러 무시
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('Error:', error);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -117,7 +148,7 @@ export default function Home() {
             삼자대면
           </h1>
           <p className="text-[#6B7684] text-sm sm:text-base">
-            논리 · 본능 · 현실, 세 관점의 조언
+            T형 · F형 · 사주, 세 관점의 조언
           </p>
           
           {/* 사용자 정보 표시 */}
@@ -155,11 +186,12 @@ export default function Home() {
               exit={{ opacity: 0 }}
               className="space-y-4 mb-8"
             >
-              {agents.map((agent) => (
+              {agents.map((agent, index) => (
                 <AgentLog
                   key={agent.agent}
                   agent={agent}
                   isActive={agent.status === 'pending'}
+                  order={index + 1}
                 />
               ))}
             </motion.div>
