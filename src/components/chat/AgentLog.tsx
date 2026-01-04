@@ -4,6 +4,7 @@ import type { SajuData } from '@/lib/saju/engine';
 import type { AgentResponse } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface AgentLogProps {
   agent: AgentResponse;
@@ -87,9 +88,13 @@ export function AgentLog({ agent, isActive, order, sajuData }: AgentLogProps) {
         )}
       </div>
 
-      {/* 컨텐츠 */}
+      {/* 컨텐츠 - 마크다운 렌더링 */}
       <div className="text-[#191F28] text-sm leading-relaxed min-h-[48px]">
-        {agent.content || (
+        {agent.content ? (
+          <div className="markdown-content [&_p]:my-1.5 [&_strong]:font-semibold [&_em]:italic [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-1.5 [&_li]:my-0.5 [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_blockquote]:border-l-2 [&_blockquote]:border-gray-300 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-gray-600">
+            <ReactMarkdown>{agent.content}</ReactMarkdown>
+          </div>
+        ) : (
           <div className="flex items-center gap-1.5 text-[#8B95A1]">
             <motion.span
               animate={{ opacity: [0.3, 1, 0.3] }}

@@ -133,7 +133,7 @@ ${otherAgentsStatements ? `최근 다른 상담사들 발언:\n${otherAgentsStat
 2-3문장으로!`;
 }
 
-// 합의 체크 프롬프트
+// 합의 체크 프롬프트 - 최소 6턴 이후에만 합의 가능
 const checkConsensusPrompt = (query: string, debateHistory: string, turnCount: number) => `너는 토론 분석가야. 
 
 질문: ${query}
@@ -143,13 +143,16 @@ const checkConsensusPrompt = (query: string, debateHistory: string, turnCount: n
 ${debateHistory}
 
 분석:
-1. 세 상담사가 공통으로 동의하는 부분이 있는가?
-2. 결론을 향해 수렴하고 있는가?
-3. ${turnCount}번이나 토론했으니 이제 결론을 내릴 때인가?
+1. 세 상담사가 각자 충분히 의견을 피력했는가? (최소 2번씩은 발언해야 함)
+2. 서로의 의견에 대해 충분히 반박하고 토론했는가?
+3. 아직 다루지 않은 중요한 관점이 있는가?
 
-판정:
-- CONSENSUS: 더 토론해도 새로운 의견 없을 것 같음, 결론 가능
-- CONTINUE: 아직 중요한 쟁점이 남아있음 (단, 최대 2턴 더만 허용)
+판정 기준:
+- ${turnCount < 6 ? '⚠️ 아직 토론이 충분하지 않음! CONTINUE 필수!' : '토론이 어느 정도 진행됨'}
+- CONSENSUS: ${turnCount >= 6 ? '충분히 토론했고 더 새로운 의견이 없을 것 같음' : '절대 선택 금지'}
+- CONTINUE: 아직 더 깊은 토론 필요
+
+${turnCount < 6 ? '반드시 CONTINUE를 선택하라!' : '신중하게 판단하라.'}
 
 JSON만: {"status":"CONSENSUS|CONTINUE"}`;
 
@@ -271,8 +274,8 @@ JSON으로만 응답:
     // 검증 실패시 일단 통과 (사용자 경험 우선)
   }
 
-  // 최대 발언 횟수 (첫 3턴 + 추가 3턴 = 6턴이면 충분)
-  const MAX_TURNS = 6;
+  // 최대 발언 횟수 (첫 3턴 + 추가 5턴 = 8턴으로 충분한 토론)
+  const MAX_TURNS = 8;
 
   const stream = new ReadableStream({
     async start(controller) {
