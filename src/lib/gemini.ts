@@ -9,7 +9,7 @@ if (!apiKey) {
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 export const model = genAI?.getGenerativeModel({
-  model: 'gemini-2.5-flash-lite',
+  model: 'gemini-2.5-flash',
 }) ?? null;
 
 export interface GenerateOptions {
@@ -36,7 +36,7 @@ export async function generateResponse(
     );
   }
 
-  const { temperature = 0.5, maxOutputTokens = 500 } = options;
+  const { temperature = 0.5, maxOutputTokens = 1000 } = options;
 
   try {
     const result = await model.generateContent({
@@ -49,10 +49,15 @@ export async function generateResponse(
       generationConfig: {
         maxOutputTokens,
         temperature,
+        // @ts-expect-error - thinkingConfig is available in gemini-2.5-flash
+        thinkingConfig: {
+          thinkingBudget: 0, // Disable thinking to prevent output truncation
+        },
       },
     });
 
     const text = result.response.text();
+    console.log('🔍 Gemini response length:', text?.length, 'chars:', text?.slice(0, 100) + '...');
     if (!text) {
       throw new GeminiError('AI 응답이 비어있습니다.', 'PARSE_ERROR');
     }

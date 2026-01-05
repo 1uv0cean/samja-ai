@@ -84,12 +84,19 @@ export default function Home() {
 
       if (!reader) throw new Error('No reader');
 
+      let buffer = ''; // 버퍼: 불완전한 청크 저장
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const text = decoder.decode(value);
-        const lines = text.split('\n');
+        // 버퍼에 새 청크 추가
+        buffer += decoder.decode(value, { stream: true });
+        
+        // 완전한 라인만 처리
+        const lines = buffer.split('\n');
+        // 마지막 라인은 불완전할 수 있으므로 버퍼에 유지
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -132,7 +139,7 @@ export default function Home() {
                 setIsLoading(false);
               }
             } catch {
-              // JSON 파싱 에러 무시
+              // JSON 파싱 에러 무시 (불완전한 청크)
             }
           }
         }
@@ -212,31 +219,14 @@ export default function Home() {
           )}
         </motion.header>
 
-        {/* 사용자 질문 표시 */}
-        <AnimatePresence>
-          {currentQuery && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="mb-6"
-            >
-              <div className="bg-[#3182F6] text-white rounded-2xl rounded-tr-sm p-4 shadow-sm">
-                <p className="text-sm font-medium opacity-70 mb-1">내 고민</p>
-                <p className="text-base leading-relaxed">{currentQuery}</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* 토론 진행 표시 */}
+        {/* 토론 진행 표시 - 토론방 바깥에 표시 */}
         <AnimatePresence>
           {agents.length > 0 && !verdict && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="flex justify-center mb-6"
+              className="flex justify-center mb-4"
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm text-sm text-[#6B7684]">
                 <motion.span
@@ -251,24 +241,85 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* 에이전트 로그 영역 */}
+        {/* 메신저 스타일 대화창 */}
         <AnimatePresence>
           {agents.length > 0 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="space-y-4 mb-8"
+              className="mb-8 overflow-hidden rounded-3xl shadow-lg"
             >
-              {agents.map((agent, index) => (
-                <AgentLog
-                  key={`${agent.agent}-${index}`}
-                  agent={agent}
-                  isActive={agent.status === 'pending'}
-                  order={index + 1}
-                  sajuData={agent.agent === 'SAJU' ? sajuData : null}
-                />
-              ))}
+              {/* 대화창 헤더 */}
+              <div className="bg-gradient-to-r from-[#3182F6] via-[#9B59B6] to-[#FF6B9D] px-5 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex -space-x-2">
+                      <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm backdrop-blur-sm">🧠</span>
+                      <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm backdrop-blur-sm">💗</span>
+                      <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm backdrop-blur-sm">🔮</span>
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold text-sm">삼자대면 토론방</p>
+                      <p className="text-white/70 text-xs">T형 · F형 · 사주</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-white/70 text-xs">토론 중</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 대화 영역 - 메신저 배경 */}
+              <div 
+                className="p-4 space-y-4 min-h-[200px] max-h-[60vh] overflow-y-auto"
+                style={{
+                  background: 'linear-gradient(180deg, #F0F4F8 0%, #E8ECF0 100%)',
+                  backgroundImage: `
+                    radial-gradient(circle at 20% 50%, rgba(49, 130, 246, 0.03) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 30%, rgba(155, 89, 182, 0.03) 0%, transparent 50%),
+                    radial-gradient(circle at 50% 80%, rgba(255, 107, 157, 0.03) 0%, transparent 50%)
+                  `,
+                }}
+              >
+                {/* 사용자 질문 - 오른쪽 정렬 말풍선 */}
+                {currentQuery && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex justify-end"
+                  >
+                    <div className="max-w-[80%]">
+                      <p className="text-[10px] text-[#8B95A1] text-right mb-1">나의 고민</p>
+                      <div className="relative">
+                        <div 
+                          className="absolute -right-2 top-3 w-0 h-0"
+                          style={{
+                            borderTop: '6px solid transparent',
+                            borderBottom: '6px solid transparent',
+                            borderLeft: '8px solid #3182F6',
+                          }}
+                        />
+                        <div className="bg-[#3182F6] text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
+                          <p className="text-sm leading-relaxed">{currentQuery}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* 에이전트 대화 */}
+                {agents.map((agent, index) => (
+                  <AgentLog
+                    key={`${agent.agent}-${index}`}
+                    agent={agent}
+                    isActive={agent.status === 'pending'}
+                    order={index + 1}
+                    sajuData={agent.agent === 'SAJU' ? sajuData : null}
+                  />
+                ))}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

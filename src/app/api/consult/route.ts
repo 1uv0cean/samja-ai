@@ -35,102 +35,109 @@ function getCurrentDateContext(): string {
 }
 
 // 첫 발언 프롬프트
-function getFirstTurnPrompt(basePrompt: string): string {
+function getFirstTurnPrompt(basePrompt: string, query: string): string {
   return `${basePrompt}
 
 ${getCurrentDateContext()}
 
-# 토론 시작
-너는 이 질문에 대해 첫 번째로 의견을 말하게 됐어.
+[고민]
+"${query}"
 
-필수 요구사항:
-1. 네 관점에서 명확한 입장을 밝혀 (찬성인지 반대인지, 왜 그런지)
-2. 네 전문 영역의 근거를 반드시 1개 이상 제시
-   - T형: 숫자/확률/논리
-   - F형: 감정/마음/행복
-   - 사주: 타이밍/운/시기 (구체적인 연도/월 언급)
-3. 2-3문장으로 답변해`;
+이 고민에 대해 네 관점에서 먼저 조언해. 다른 상담사들과 토론할 거니까 네 입장을 명확히 해!
+3~4문장으로 짧게!`;
 }
 
 // 토론 이어가기 프롬프트
-function getContinuedDebatePrompt(basePrompt: string, debateHistory: string, turnCount: number, agentName: string): string {
-  // 마지막 발언자 추출
-  const lastSpeaker = debateHistory.match(/\[([^\]]+)\]:[^\[]*$/)?.[1] || '';
+function getContinuedDebatePrompt(basePrompt: string, debateHistory: string, turnCount: number, agentName: string, query: string): string {
+  // 발언 목록 추출
+  const statements = debateHistory.split('\n\n').filter(s => s.trim().length > 0);
   
   // 해당 에이전트의 이전 발언들 추출
-  const myPreviousStatements = debateHistory
-    .split('\n\n')
+  const myPreviousStatements = statements
     .filter(s => s.startsWith(`[${agentName}]:`))
     .map(s => s.replace(`[${agentName}]:`, '').trim());
   
-  const previousStatementsWarning = myPreviousStatements.length > 0 
-    ? `
-⚠️ 네가 이미 한 말들 (반복 금지!):
-${myPreviousStatements.map((s, i) => `${i + 1}. "${s.slice(0, 60)}..."`).join('\n')}
-` : '';
+  // 이전 발언에서 핵심 키워드/문구 추출
+  const extractKeyPhrases = (text: string): string[] => {
+    const phrases: string[] = [];
+    const firstSentence = text.split(/[.!?]/)[0];
+    if (firstSentence) phrases.push(firstSentence.slice(0, 30));
+    const numberMatches = text.match(/\d+[년개월%원만천억]+/g);
+    if (numberMatches) phrases.push(...numberMatches.slice(0, 3));
+    const keyExpressions = text.match(/(때가|운명|마음이|현실적으로|허허|감정|논리)/g);
+    if (keyExpressions) phrases.push(...keyExpressions);
+    return [...new Set(phrases)];
+  };
+  
+  const usedKeyPhrases = myPreviousStatements.flatMap(extractKeyPhrases);
+  
+  // 마지막 발언자 추출
+  const lastStatement = statements[statements.length - 1] || '';
+  const lastSpeakerMatch = lastStatement.match(/\[([^\]]+)\]:/);
+  const lastSpeaker = lastSpeakerMatch ? lastSpeakerMatch[1] : '';
+  const lastContent = lastStatement.replace(/\[[^\]]+\]:/, '').trim();
+  
+  // 역할별 토론 지시
+  let roleDebateInstruction = '';
+  if (agentName === 'T형') {
+    if (lastSpeaker === 'F형') {
+      roleDebateInstruction = '⚔️ F형이 감정적으로 말했어. "감정으로 결정하면 망해", "숫자로 보면"으로 냉정하게 반박해!';
+    } else if (lastSpeaker === '사주') {
+      roleDebateInstruction = '⚔️ 사주가 운세 얘기했어. "운? 통계가 더 정확해", "데이터로 보면"으로 논리적으로 반박해!';
+    }
+  } else if (agentName === 'F형') {
+    if (lastSpeaker === 'T형') {
+      roleDebateInstruction = '⚔️ T형이 너무 차갑게 말했어. "야, 너무 차가워! 마음도 봐줘야지"라고 따뜻하게 반박해!';
+    } else if (lastSpeaker === '사주') {
+      roleDebateInstruction = '⚔️ 사주가 기다리라고 했어. "기다리는 것도 좋지만 마음이 원할 때가 진짜 때야"라고 감성적으로 반박해!';
+    }
+  } else if (agentName === '사주') {
+    if (lastSpeaker === 'T형' || lastSpeaker === 'F형') {
+      roleDebateInstruction = '⚔️ T형과 F형이 싸우고 있어. "허허, 다 부질없는 소리다"라며 제3의 운명론적 시각을 제시해!';
+    }
+  }
+  
+  // 다른 에이전트들의 최근 발언 (전체 내용 표시)
+  const otherStatements = statements
+    .filter(s => !s.startsWith(`[${agentName}]:`))
+    .slice(-2)
+    .map(s => {
+      const match = s.match(/\[([^\]]+)\]:([\s\S]*)/);
+      if (match) return `${match[1]}: "${match[2].trim()}"`;
+      return s;
+    })
+    .join('\n');
+  
+  // 강화된 반복 방지 경고
+  let repeatWarning = '';
+  if (myPreviousStatements.length > 0) {
+    repeatWarning = `
 
-  // 후반부 토론 (5턴 이후)
-  if (turnCount >= 5) {
-    return `${basePrompt}
-
-${getCurrentDateContext()}
-
-# 토론 마무리 단계
-지금까지의 대화:
-${debateHistory}
-${previousStatementsWarning}
-
-# 이제 결론을 내릴 시간!
-${lastSpeaker}의 말을 듣고, 실용적인 합의안을 제시해.
-
-⚠️ 주의: 억지로 동의하지 마!
-- 네 관점을 버리지 않으면서 타협점을 찾아
-- "모두 옳다"는 식의 애매한 결론 금지
-
-필수 요구사항:
-1. 다른 상담사 의견 중 인정할 부분 명확히 언급
-2. 하지만 네 관점에서 꼭 지켜야 할 것 강조
-3. 구체적인 행동 가이드 제시 (시기 + 조건 + 마음가짐)
-
-2-3문장으로!`;
+🚫 [반복 금지!]
+네가 이미 한 말: "${myPreviousStatements[myPreviousStatements.length - 1].slice(0, 80)}..."
+금지 표현: ${usedKeyPhrases.slice(0, 4).map(p => `"${p}"`).join(', ')}
+→ 완전히 다른 논점이나 예시로 말할 것!`;
   }
 
-  // 전반부 토론
-  // 다른 에이전트들의 마지막 발언 추출
-  const otherAgentsStatements = debateHistory
-    .split('\n\n')
-    .filter(s => !s.startsWith(`[${agentName}]:`))
-    .slice(-2) // 최근 2개
-    .join('\n');
+  const turnInstruction = turnCount >= 5 
+    ? '\n💡 토론 막바지! 핵심만 짧게!'
+    : '';
 
   return `${basePrompt}
 
 ${getCurrentDateContext()}
 
-# 입체적 토론 진행 중
-지금까지의 대화:
-${debateHistory}
-${previousStatementsWarning}
+[사용자 고민]
+"${query}"
 
-# ${lastSpeaker}에게 반응하기
+[이전 토론 - 반드시 읽고 반응할 것]
+${otherStatements}
 
-📌 ${lastSpeaker}가 방금 한 말의 핵심을 파악해:
-${otherAgentsStatements ? `최근 다른 상담사들 발언:\n${otherAgentsStatements}` : ''}
+${roleDebateInstruction}
+${repeatWarning}
+${turnInstruction}
 
-# 입체적 반응 가이드
-1. **직접 인용하며 반응**: "${lastSpeaker}가 '~'라고 했는데..."로 시작
-2. **부분 동의 + 부분 반대**: 100% 찬성/반대보다 "그건 맞는데, 이 부분은..."
-3. **네 관점에서 보완**: 상대가 놓친 부분을 네 전문 영역으로 채워줘
-   - T형: 현실적 조건, 구체적 계획
-   - F형: 감정적 측면, 장기적 행복  
-   - 사주: 시기와 타이밍, 기운의 흐름
-
-⚠️ 피해야 할 것:
-- "좋은 의견이야" 같은 빈 칭찬
-- 상대 말 반복하기
-- 맥락 없이 새 주장 던지기
-
-2-3문장으로!`;
+위 발언에 직접 반응하며 네 입장을 밝혀! 3~4문장!`;
 }
 
 // 합의 체크 프롬프트 - 최소 6턴 이후에만 합의 가능
@@ -157,34 +164,29 @@ ${turnCount < 6 ? '반드시 CONTINUE를 선택하라!' : '신중하게 판단�
 JSON만: {"status":"CONSENSUS|CONTINUE"}`;
 
 // 최종 합의 요약 프롬프트
-const FINAL_VERDICT_PROMPT = `# Role
-너는 '삼자대면' 토론의 최종 정리자야.
+const FINAL_VERDICT_PROMPT = `너는 '삼자대면' 토론 정리자야. 토론 내용을 분석해서 JSON으로 정리해.
 
-# 핵심 원칙
-⚠️ 중요: 억지 합의 금지!
-- 세 상담사가 의견이 다르면 다르다고 솔직히 말해
-- 공통점이 있는 부분만 "합의"로 정리
-- 이견이 있는 부분은 각 관점의 차이로 명확히 구분
+# 분석 방법
+1. 세 상담사(T형, F형, 사주)가 공통으로 동의한 부분 찾기
+2. 가장 큰 의견 차이 파악
+3. 각자의 핵심 조언 1문장씩 정리 (반드시 3개만!)
+4. 사용자를 위한 실용적 가이드 제시
 
-# Instruction
-토론 내용을 분석해서:
-1. 세 상담사가 공통으로 동의한 포인트는? (없으면 "명확한 합의 없음")
-2. 가장 큰 이견은 무엇인가? (예: 타이밍, 방법론, 우선순위)
-3. 각 상담사의 최종 입장을 한 문장으로 요약
-4. 사용자가 자신에게 맞는 관점을 선택할 수 있도록 안내
-
-# Output (JSON)
-주의: 각 조언에 "T형:", "F형:", "사주:" 같은 이름 prefix 붙이지 마!
+# 출력 규칙
+- 반드시 유효한 JSON만 출력
+- keyPoints는 반드시 정확히 3개! (T형, F형, 사주 순서)
+- 각 keyPoints에 에이전트 이름 붙이지 마 (예: "T형:"❌)
+- 모든 필드 반드시 채우기
 
 {
-  "consensus": "세 상담사가 공통으로 동의한 부분 1문장 (없으면 '세 관점이 서로 다른 방향을 제시합니다')",
-  "disagreement": "가장 큰 이견 1문장 (예: '타이밍에 대한 의견이 가장 달랐습니다')",
+  "consensus": "세 상담사가 동의한 핵심 포인트 1문장",
+  "disagreement": "가장 큰 의견 차이 1문장",
   "keyPoints": [
-    "T형 최종 입장: 구체적인 조언 1문장",
-    "F형 최종 입장: 구체적인 조언 1문장", 
-    "사주 최종 입장: 구체적인 조언 1문장"
+    "T형의 핵심 조언 1문장 (논리/숫자 기반)",
+    "F형의 핵심 조언 1문장 (감정/마음 기반)",
+    "사주의 핵심 조언 1문장 (시기/운세 기반)"
   ],
-  "recommendation": "사용자에게 맞는 선택을 위한 가이드 2문장 (예: 'A가 중요하면 T형 조언을, B가 중요하면 F형 조언을 참고하세요')"
+  "recommendation": "어떤 관점을 따를지 사용자가 선택하도록 안내하는 2문장"
 }`;
 
 export async function POST(request: NextRequest) {
@@ -246,7 +248,8 @@ JSON으로만 응답:
   try {
     const validationResult = await model!.generateContent({
       contents: [{ role: 'user', parts: [{ text: validationPrompt }] }],
-      generationConfig: { maxOutputTokens: 150, temperature: 0.1 },
+      // @ts-expect-error - thinkingConfig for gemini-2.5-flash
+      generationConfig: { temperature: 0.1, thinkingConfig: { thinkingBudget: 0 } },
     });
 
     const validationText = validationResult.response.text();
@@ -301,7 +304,7 @@ JSON으로만 응답:
         }
 
         const firstResponse = await generateResponse(
-          getFirstTurnPrompt(basePrompt), 
+          getFirstTurnPrompt(basePrompt, query), 
           query, 
           { temperature: firstAgent.config.temperature }
         );
@@ -315,7 +318,7 @@ JSON으로만 응답:
         debateHistory += `[${firstAgent.name}]: ${firstResponse}\n\n`;
         turnCount++;
 
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 1200));
 
         // 두 번째, 세 번째 에이전트 초기 발언
         for (let i = 1; i < initialOrder.length; i++) {
@@ -332,7 +335,7 @@ JSON으로만 응답:
           }
 
           const response = await generateResponse(
-            getContinuedDebatePrompt(agentBasePrompt, debateHistory, turnCount, agent.name),
+            getContinuedDebatePrompt(agentBasePrompt, debateHistory, turnCount, agent.name, query),
             query,
             { temperature: agent.config.temperature }
           );
@@ -346,7 +349,7 @@ JSON으로만 응답:
           debateHistory += `[${agent.name}]: ${response}\n\n`;
           turnCount++;
 
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => setTimeout(resolve, 1200));
         }
 
         // 합의 체크 후 추가 토론
@@ -354,7 +357,8 @@ JSON으로만 응답:
           // 합의 여부 체크
           const consensusResult = await model!.generateContent({
             contents: [{ role: 'user', parts: [{ text: checkConsensusPrompt(query, debateHistory, turnCount) }] }],
-            generationConfig: { maxOutputTokens: 50, temperature: 0.1 },
+            // @ts-expect-error - thinkingConfig for gemini-2.5-flash
+            generationConfig: { temperature: 0.1, thinkingConfig: { thinkingBudget: 0 } },
           });
 
           const consensusText = consensusResult.response.text();
@@ -386,7 +390,7 @@ JSON으로만 응답:
           }
 
           const response = await generateResponse(
-            getContinuedDebatePrompt(nextBasePrompt, debateHistory, turnCount, nextAgent.name),
+            getContinuedDebatePrompt(nextBasePrompt, debateHistory, turnCount, nextAgent.name, query),
             query,
             { temperature: Math.max(0.2, nextAgent.config.temperature - 0.1 * Math.floor(turnCount / 3)) }
           );
@@ -400,7 +404,7 @@ JSON으로만 응답:
           debateHistory += `[${nextAgent.name}]: ${response}\n\n`;
           turnCount++;
 
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => setTimeout(resolve, 1200));
         }
 
         // 최종 판결
@@ -415,34 +419,41 @@ JSON으로만 응답:
 토론 전체 내용:
 ${debateHistory}
 
-JSON만 출력:`;
+위 토론 내용을 분석해서 반드시 유효한 JSON만 출력해. 다른 텍스트 없이 JSON만!`;
 
         const verdictResult = await model!.generateContent({
           contents: [{ role: 'user', parts: [{ text: verdictPrompt }] }],
-          generationConfig: { maxOutputTokens: 300, temperature: 0.3 },
+          // @ts-expect-error - thinkingConfig for gemini-2.5-flash
+          generationConfig: { temperature: 0.2, thinkingConfig: { thinkingBudget: 0 } },
         });
 
         const verdictText = verdictResult.response.text();
+        console.log('Verdict raw response:', verdictText); // 디버깅용 로그
+        
         const jsonMatch = verdictText.match(/\{[\s\S]*\}/);
         
         let verdict: FinalVerdict = {
-          consensus: '합의 내용을 정리하는 데 문제가 발생했습니다.',
+          consensus: '세 상담사의 의견을 종합했습니다.',
           keyPoints: [],
-          recommendation: '다시 시도해주세요.',
+          recommendation: '각 관점을 참고해 본인에게 맞는 선택을 해보세요.',
         };
 
         if (jsonMatch) {
           try {
             const parsed = JSON.parse(jsonMatch[0]);
             verdict = {
-              consensus: parsed.consensus || '세 상담사의 의견을 종합했습니다.',
+              consensus: parsed.consensus || '세 상담사가 각자의 관점에서 조언했습니다.',
               disagreement: parsed.disagreement || undefined,
-              keyPoints: parsed.keyPoints || [],
-              recommendation: parsed.recommendation || '',
+              keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints.slice(0, 3) : [],
+              recommendation: parsed.recommendation || '본인의 상황에 맞는 조언을 선택하세요.',
             };
-          } catch {
-            console.error('Failed to parse verdict');
+          } catch (e) {
+            console.error('Failed to parse verdict JSON:', e);
+            console.error('JSON match was:', jsonMatch[0]);
+            // 파싱 실패해도 기본값 사용
           }
+        } else {
+          console.error('No JSON found in verdict response');
         }
 
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
