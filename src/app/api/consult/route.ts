@@ -47,7 +47,7 @@ ${getCurrentDateContext()}
 3~4문장으로 짧게!`;
 }
 
-// 토론 이어가기 프롬프트
+// 토론 이어가기 프롬프트 - 라운드 기반 구조
 function getContinuedDebatePrompt(basePrompt: string, debateHistory: string, turnCount: number, agentName: string, query: string): string {
   // 발언 목록 추출
   const statements = debateHistory.split('\n\n').filter(s => s.trim().length > 0);
@@ -57,19 +57,11 @@ function getContinuedDebatePrompt(basePrompt: string, debateHistory: string, tur
     .filter(s => s.startsWith(`[${agentName}]:`))
     .map(s => s.replace(`[${agentName}]:`, '').trim());
   
-  // 이전 발언에서 핵심 키워드/문구 추출
-  const extractKeyPhrases = (text: string): string[] => {
-    const phrases: string[] = [];
-    const firstSentence = text.split(/[.!?]/)[0];
-    if (firstSentence) phrases.push(firstSentence.slice(0, 30));
-    const numberMatches = text.match(/\d+[년개월%원만천억]+/g);
-    if (numberMatches) phrases.push(...numberMatches.slice(0, 3));
-    const keyExpressions = text.match(/(때가|운명|마음이|현실적으로|허허|감정|논리)/g);
-    if (keyExpressions) phrases.push(...keyExpressions);
-    return [...new Set(phrases)];
-  };
-  
-  const usedKeyPhrases = myPreviousStatements.flatMap(extractKeyPhrases);
+  // 사용된 숫자/통계 추출 (T형 전용)
+  const usedStats = statements
+    .filter(s => s.startsWith('[T형]:'))
+    .join(' ')
+    .match(/\d+[%년개월]+/g) || [];
   
   // 마지막 발언자 추출
   const lastStatement = statements[statements.length - 1] || '';
@@ -77,27 +69,43 @@ function getContinuedDebatePrompt(basePrompt: string, debateHistory: string, tur
   const lastSpeaker = lastSpeakerMatch ? lastSpeakerMatch[1] : '';
   const lastContent = lastStatement.replace(/\[[^\]]+\]:/, '').trim();
   
-  // 역할별 토론 지시
-  let roleDebateInstruction = '';
+  // 라운드 결정 (1라운드: 입장표명 1-3턴, 2라운드: 상호반박 4-6턴, 3라운드: 결론 7+턴)
+  let roundInstruction = '';
+  let roundNumber = 1;
+  if (turnCount <= 3) {
+    roundNumber = 1;
+    roundInstruction = '🔵 [Round 1: 입장 표명] 네 관점에서 명확한 입장을 밝혀.';
+  } else if (turnCount <= 6) {
+    roundNumber = 2;
+    roundInstruction = '🟡 [Round 2: 상호 반박] 상대방 주장의 헛점을 지적하고 더 깊이 반박해!';
+  } else {
+    roundNumber = 3;
+    roundInstruction = '🔴 [Round 3: 결론] 마지막 발언! 핵심만 정리하고 구체적 대안을 제시해.';
+  }
+  
+  // 역할별 BUILD UP 지시
+  let buildUpInstruction = '';
   if (agentName === 'T형') {
+    const statsUsed = usedStats.length;
+    if (statsUsed >= 2) {
+      buildUpInstruction = `⚠️ 이미 통계를 ${statsUsed}번 사용했어. 이제 숫자 대신 논리적 인과관계나 구체적 사례로 설득해!`;
+    }
     if (lastSpeaker === 'F형') {
-      roleDebateInstruction = '⚔️ F형이 감정적으로 말했어. "감정으로 결정하면 망해", "숫자로 보면"으로 냉정하게 반박해!';
+      buildUpInstruction += '\n💡 F형의 감정론을 무시하지 말고, 인정하면서 현실적 대안을 제시해.';
     } else if (lastSpeaker === '사주') {
-      roleDebateInstruction = '⚔️ 사주가 운세 얘기했어. "운? 통계가 더 정확해", "데이터로 보면"으로 논리적으로 반박해!';
+      buildUpInstruction += '\n💡 사주의 "때" 키워드를 받아서 구체적인 타임라인으로 반박해.';
     }
   } else if (agentName === 'F형') {
     if (lastSpeaker === 'T형') {
-      roleDebateInstruction = '⚔️ T형이 너무 차갑게 말했어. "야, 너무 차가워! 마음도 봐줘야지"라고 따뜻하게 반박해!';
+      buildUpInstruction = '💡 T형의 냉정한 분석을 정면 반박하되, 사용자의 감정적 니즈를 더 깊이 파고들어.';
     } else if (lastSpeaker === '사주') {
-      roleDebateInstruction = '⚔️ 사주가 기다리라고 했어. "기다리는 것도 좋지만 마음이 원할 때가 진짜 때야"라고 감성적으로 반박해!';
+      buildUpInstruction = '💡 사주의 기다림 조언을 인정하면서도 "마음의 타이밍"이 더 중요하다고 강조해.';
     }
   } else if (agentName === '사주') {
-    if (lastSpeaker === 'T형' || lastSpeaker === 'F형') {
-      roleDebateInstruction = '⚔️ T형과 F형이 싸우고 있어. "허허, 다 부질없는 소리다"라며 제3의 운명론적 시각을 제시해!';
-    }
+    buildUpInstruction = '💡 T형과 F형의 논쟁을 정리하며 제3의 운명론적 시각을 제시해. 둘 다 일리가 있지만...';
   }
   
-  // 다른 에이전트들의 최근 발언 (전체 내용 표시)
+  // 다른 에이전트들의 최근 발언
   const otherStatements = statements
     .filter(s => !s.startsWith(`[${agentName}]:`))
     .slice(-2)
@@ -108,36 +116,32 @@ function getContinuedDebatePrompt(basePrompt: string, debateHistory: string, tur
     })
     .join('\n');
   
-  // 강화된 반복 방지 경고
+  // 반복 방지 경고
   let repeatWarning = '';
   if (myPreviousStatements.length > 0) {
     repeatWarning = `
-
-🚫 [반복 금지!]
-네가 이미 한 말: "${myPreviousStatements[myPreviousStatements.length - 1].slice(0, 80)}..."
-금지 표현: ${usedKeyPhrases.slice(0, 4).map(p => `"${p}"`).join(', ')}
-→ 완전히 다른 논점이나 예시로 말할 것!`;
+🚫 [NO REPETITION!]
+네 이전 발언: "${myPreviousStatements[myPreviousStatements.length - 1].slice(0, 60)}..."
+→ 이 말은 절대 반복하지 마! 새로운 논점을 꺼내!`;
   }
-
-  const turnInstruction = turnCount >= 5 
-    ? '\n💡 토론 막바지! 핵심만 짧게!'
-    : '';
 
   return `${basePrompt}
 
 ${getCurrentDateContext()}
 
+${roundInstruction}
+
 [사용자 고민]
 "${query}"
 
-[이전 토론 - 반드시 읽고 반응할 것]
+[이전 토론]
 ${otherStatements}
 
-${roleDebateInstruction}
+[BUILD UP 지시]
+${buildUpInstruction}
 ${repeatWarning}
-${turnInstruction}
 
-위 발언에 직접 반응하며 네 입장을 밝혀! 3~4문장!`;
+${lastSpeaker}의 말에 직접 반응하며 네 입장을 밝혀! 3~4문장!`;
 }
 
 // 합의 체크 프롬프트 - 최소 6턴 이후에만 합의 가능
